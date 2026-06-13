@@ -1,0 +1,4 @@
+column,q1,q3,lower_fence,upper_fence,outlier_count,action
+tenure,9.0,55.0,-60.0,124.0,0,Retained — likely valid high-value customers
+MonthlyCharges,35.5,89.85,-46.02,171.38,0,Retained — likely valid high-value customers
+TotalCharges,398.55,3786.6,-4683.52,8868.67,0,Retained — likely valid high-value customers

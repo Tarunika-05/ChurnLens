@@ -1,0 +1,21 @@
+feature,importance
+cat__is_month_to_month_False,0.18919475
+cat__Contract_Month-to-month,0.18269153
+cat__is_month_to_month_True,0.12320364
+cat__OnlineSecurity_No,0.04758331
+cat__PaymentMethod_Electronic check,0.029267231
+cat__TechSupport_No,0.023168031
+cat__InternetService_Fiber optic,0.019802164
+cat__tenure_bucket_0-12 months,0.016909095
+cat__MultipleLines_No phone service,0.016696557
+cat__PaperlessBilling_No,0.01603547
+cat__StreamingMovies_Yes,0.016029019
+cat__InternetService_DSL,0.015955087
+cat__TechSupport_Yes,0.015364886
+cat__OnlineSecurity_Yes,0.013379732
+cat__Dependents_Yes,0.012781201
+cat__Contract_Two year,0.012648531
+cat__Contract_One year,0.01222726
+cat__OnlineBackup_No,0.011864429
+cat__PaperlessBilling_Yes,0.011801515
+cat__Dependents_No,0.011521591

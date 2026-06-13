@@ -6,6 +6,7 @@ from typing import Dict, Any
 
 def setup_mlflow(experiment_name: str = "churn-prediction") -> None:
     """Initialize MLflow experiment."""
+    mlflow.set_tracking_uri("sqlite:///mlflow.db")
     mlflow.set_experiment(experiment_name)
 
 def log_training_run(

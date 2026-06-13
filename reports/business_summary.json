@@ -1,0 +1,9 @@
+{
+  "total_customers": 7043,
+  "active_customers": 5174,
+  "churned_customers": 1869,
+  "churn_rate_pct": 26.54,
+  "monthly_revenue": 316985.75,
+  "revenue_lost_monthly": 139130.85,
+  "avg_clv": 2279.58
+}

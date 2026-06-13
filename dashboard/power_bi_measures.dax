@@ -1,0 +1,41 @@
+// Paste these in Power BI Desktop: Modeling → New measure
+
+Total Customers = DISTINCTCOUNT(dashboard_data[customerID])
+
+Churn Rate =
+DIVIDE(
+    CALCULATE(COUNTROWS(dashboard_data), dashboard_data[churn_flag] = TRUE()),
+    COUNTROWS(dashboard_data)
+)
+
+Monthly Revenue =
+SUMX(
+    FILTER(dashboard_data, dashboard_data[churn_flag] = FALSE()),
+    dashboard_data[MonthlyCharges]
+)
+
+Revenue Lost =
+SUMX(
+    FILTER(dashboard_data, dashboard_data[churn_flag] = TRUE()),
+    dashboard_data[MonthlyCharges]
+)
+
+Avg CLV = AVERAGE(dashboard_data[estimated_clv])
+
+High Risk Customers =
+CALCULATE(
+    COUNTROWS(dashboard_data),
+    dashboard_data[risk_tier] = "High"
+)
+
+Churned Customers =
+CALCULATE(
+    COUNTROWS(dashboard_data),
+    dashboard_data[churn_flag] = TRUE()
+)
+
+Active Customers =
+CALCULATE(
+    COUNTROWS(dashboard_data),
+    dashboard_data[churn_flag] = FALSE()
+)
