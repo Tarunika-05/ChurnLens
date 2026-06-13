@@ -35,6 +35,7 @@ import optuna.visualization as vis
 from src.exceptions import PipelineError
 from src.config import RANDOM_STATE, TEST_SIZE, IMAGES_DIR
 from src.features import get_model_features
+from src.experiment_tracking import log_training_run
 
 
 def build_preprocessor(feature_frame: pd.DataFrame) -> ColumnTransformer:
@@ -220,6 +221,14 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             model_metrics["cv_roc_auc_mean"] = round(float(np.mean(cv_roc_aucs)), 4)
             model_metrics["cv_roc_auc_std"] = round(float(np.std(cv_roc_aucs)), 4)
             metrics.append(model_metrics)
+            
+            # Log to MLflow
+            try:
+                params = getattr(estimator, "get_params", lambda: {})()
+                mlflow_metrics = {k: v for k, v in model_metrics.items() if isinstance(v, (int, float))}
+                log_training_run(name, params, mlflow_metrics, pipeline)
+            except Exception:
+                pass # If MLflow isn't fully configured, fail gracefully
 
         metrics_df = pd.DataFrame(metrics).sort_values("roc_auc", ascending=False)
         best_name = metrics_df.iloc[0]["model"]

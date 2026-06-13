@@ -11,3 +11,5 @@ env/
 Thumbs.db
 churn.db
 .coverage
+mlruns/
+mlruns.db

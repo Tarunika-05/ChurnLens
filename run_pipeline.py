@@ -23,6 +23,7 @@ from src.features import add_engineered_features, get_model_features
 from src.ml_models import extract_feature_importance, save_metrics, train_models
 from src.explainability import get_shap_explainer, global_shap_summary
 from src.statistical_tests import run_all_significance_tests
+from src.experiment_tracking import setup_mlflow
 
 
 from src.logger import log_step, setup_logging
@@ -150,6 +151,7 @@ def save_architecture_diagram() -> None:
 def main() -> None:
     logger = setup_logging(settings.log_level)
     logger.info("Starting Customer Churn Analytics Pipeline")
+    setup_mlflow()
     try:
         ensure_directories()
         raw_df = load_raw_data(DATA_RAW)
