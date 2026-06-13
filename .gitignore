@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.env
+# Regenerate with: py run_pipeline.py
+# models/best_model.pkl
+.DS_Store
+Thumbs.db
+churn.db
+.coverage
