@@ -596,7 +596,7 @@ def main() -> None:
                         st.success("✅ LOW RISK")
                 
                 with res_col2:
-                    st.progress(prob, text="Risk Level")
+                    st.progress(float(prob), text="Risk Level")
                     if prob >= 0.5:
                         st.markdown("**Recommendation:** Immediate retention action required. Review plan pricing and tech support experience.")
                     else:
