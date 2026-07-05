@@ -3,6 +3,8 @@
 ![CI](https://github.com/Tarunika-05/ChurnLens/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://codecov.io/gh/Tarunika-05/ChurnLens/branch/main/graph/badge.svg)
 
+**[🚀 View Live Demo](https://customer-churn-analytics-and-prediction-jw5dxwma2wtfhsus3u7jmw.streamlit.app/)**
+
 A portfolio-ready telecom churn analytics project demonstrating SQL, Python data science, machine learning, and executive dashboard design.
 
 ![Architecture](images/architecture.png)
