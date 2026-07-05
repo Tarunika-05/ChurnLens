@@ -1,7 +1,7 @@
 # ChurnLens
 
-![CI](https://github.com/USERNAME/churn-analytics/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://codecov.io/gh/USERNAME/churn-analytics/branch/main/graph/badge.svg)
+![CI](https://github.com/Tarunika-05/ChurnLens/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://codecov.io/gh/Tarunika-05/ChurnLens/branch/main/graph/badge.svg)
 
 A portfolio-ready telecom churn analytics project demonstrating SQL, Python data science, machine learning, and executive dashboard design.
 
