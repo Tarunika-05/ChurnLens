@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-
 from src.exceptions import DataLoadError
+
 
 def load_raw_data(path: str) -> pd.DataFrame:
     try:
@@ -13,7 +13,7 @@ def load_raw_data(path: str) -> pd.DataFrame:
     except FileNotFoundError as e:
         raise DataLoadError(f"Raw data file not found at {path}") from e
     except Exception as e:
-        raise DataLoadError(f"Failed to load raw data: {str(e)}") from e
+        raise DataLoadError(f"Failed to load raw data: {e!s}") from e
 
 
 def build_quality_report(before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFrame:
@@ -37,6 +37,7 @@ def build_quality_report(before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFr
 
 from src.exceptions import DataValidationError
 
+
 def clean_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     required_cols = ["customerID", "TotalCharges", "MonthlyCharges", "tenure", "SeniorCitizen", "Churn"]
     missing_cols = [c for c in required_cols if c not in df.columns]
@@ -58,7 +59,7 @@ def clean_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         cleaned = cleaned[cleaned["Churn"].isin(["Yes", "No"])]
         cleaned = cleaned[cleaned["tenure"] >= 0]
     except Exception as e:
-        raise DataValidationError(f"Failed to clean data: {str(e)}") from e
+        raise DataValidationError(f"Failed to clean data: {e!s}") from e
 
     report = build_quality_report(before, cleaned)
     return cleaned, report

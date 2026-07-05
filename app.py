@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-import joblib
 from pathlib import Path
-from src.features import add_engineered_features, get_model_features
-from src.config import MODEL_PATH
 
+import joblib
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
+from src.config import MODEL_PATH
+from src.features import add_engineered_features, get_model_features
 
 ROOT = Path(__file__).resolve().parent
 DATA_PATH = ROOT / "dashboard" / "dashboard_data.csv"
@@ -32,9 +33,9 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
         st.error(f"Dashboard data file not found at {DATA_PATH}. Please run the pipeline first.")
         st.stop()
     except Exception as e:
-        st.error(f"Failed to load dashboard data: {str(e)}")
+        st.error(f"Failed to load dashboard data: {e!s}")
         st.stop()
-        
+
     customers["churn_flag"] = customers["churn_flag"].map(
         {"True": True, "False": False, True: True, False: False}
     )
@@ -43,20 +44,17 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     importance["feature_label"] = importance["feature"].str.replace(
         r"^(num__|cat__)", "", regex=True
     )
-    
+
     stats_path = ROOT / "reports" / "statistical_tests.csv"
-    if stats_path.exists():
-        stats = pd.read_csv(stats_path)
-    else:
-        stats = pd.DataFrame()
-        
+    stats = pd.read_csv(stats_path) if stats_path.exists() else pd.DataFrame()
+
     return customers, importance, stats
 
 @st.cache_resource
 def get_trained_model():
     try:
         return joblib.load(MODEL_PATH)
-    except Exception as e:
+    except Exception:
         return None
 
 @st.cache_resource
@@ -67,7 +65,7 @@ def get_shap_components(_model):
         features = get_model_features()
         X_bg = df[features].sample(min(100, len(df)), random_state=42)
         return get_shap_explainer(_model, X_bg)
-    except Exception as e:
+    except Exception:
         return None, None
 
 
@@ -157,11 +155,11 @@ def page_executive(df: pd.DataFrame) -> None:
 def get_significance_indicator(column: str, stats_df: pd.DataFrame) -> str:
     if stats_df.empty or "column" not in stats_df.columns:
         return ""
-    
+
     match = stats_df[stats_df["column"] == column]
     if match.empty:
         return ""
-        
+
     p_val = match.iloc[0]["p_value"]
     if p_val < 0.001:
         return " ✅"
@@ -172,7 +170,7 @@ def get_significance_indicator(column: str, stats_df: pd.DataFrame) -> str:
 
 def churn_rate_chart(df: pd.DataFrame, column: str, title: str, stats_df: pd.DataFrame) -> go.Figure:
     sig = get_significance_indicator(column, stats_df)
-    
+
     summary = (
         df.groupby(column, as_index=False)
         .agg(churn_rate=("churn_flag", "mean"), customers=("customerID", "count"))
@@ -248,18 +246,18 @@ def page_churn_analysis(df: pd.DataFrame, stats_df: pd.DataFrame) -> None:
     if not stats_df.empty:
         with st.expander("View Statistical Details"):
             st.markdown("This table proves which churn drivers are statistically significant (✅ p < 0.001, ⚠️ p < 0.05).")
-            
+
             def format_p(val):
                 if val < 0.001:
                     return f"{val:.4f} ✅"
                 elif val < 0.05:
                     return f"{val:.4f} ⚠️"
                 return f"{val:.4f} ❌"
-                
+
             display_stats = stats_df.copy()
             display_stats["p_value"] = display_stats["p_value"].apply(format_p)
             display_stats["effect_size"] = display_stats["effect_size"].round(3)
-            
+
             st.dataframe(display_stats, hide_index=True, use_container_width=True)
     else:
         st.info("Statistical tests not found. Run the pipeline to generate them.")
@@ -368,30 +366,30 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
         table_disp = table.copy()
         table_disp["churn_probability"] = table_disp["churn_probability"].map(lambda v: f"{v:.1%}")
         table_disp["MonthlyCharges"] = table_disp["MonthlyCharges"].map(lambda v: f"${v:,.2f}")
-        
+
         event = st.dataframe(
-            table_disp, 
-            use_container_width=True, 
+            table_disp,
+            use_container_width=True,
             hide_index=True,
             on_select="rerun",
             selection_mode="single-row"
         )
-        
+
         selected_rows = event.selection.rows
-        
+
     if selected_rows:
         selected_idx = selected_rows[0]
         customer_id = table.iloc[selected_idx]["customerID"]
         st.markdown("---")
         st.subheader(f"Customer Deep Dive: {customer_id}")
         customer_data = df[df["customerID"] == customer_id].iloc[0]
-        
+
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Risk Tier", customer_data["risk_tier"])
         c2.metric("Tenure", f"{customer_data['tenure']} months")
         c3.metric("Monthly Charge", f"${customer_data['MonthlyCharges']:.2f}")
         c4.metric("Contract", customer_data["Contract"])
-        
+
         # SHAP Waterfall
         model = get_trained_model()
         if model:
@@ -407,22 +405,22 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
                         for k, v in list(drivers_dict.items())[:6]
                     ])
                     fig_shap = px.bar(
-                        driver_df, 
-                        x="Impact", 
-                        y="Feature", 
+                        driver_df,
+                        x="Impact",
+                        y="Feature",
                         color="Direction",
                         color_discrete_map={"Increased Risk": CHURN_RED, "Decreased Risk": RETAINED_TEAL},
                         orientation="h",
                     )
                     fig_shap.update_layout(yaxis={'categoryorder':'total ascending'}, height=300)
                     st.plotly_chart(fig_shap, use_container_width=True)
-                    
+
                     if customer_data["churn_probability"] > 0.5:
-                        st.warning("💡 **Retention Recommendation:** " + 
+                        st.warning("💡 **Retention Recommendation:** " +
                             ("Offer a discounted 1-year contract." if customer_data["Contract"] == "Month-to-month" else "Review tech support experience."))
-        
+
     st.markdown("---")
-    
+
     col3, col4 = st.columns(2)
     fig_hist = px.histogram(
         df,
@@ -447,7 +445,7 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
     )
     fig_imp.update_layout(coloraxis_showscale=False, yaxis={"categoryorder": "total ascending"})
     col4.plotly_chart(fig_imp, use_container_width=True)
-    
+
     st.markdown("---")
     st.subheader("Global Feature Explainability (SHAP)")
     if SHAP_SUMMARY_PATH.exists():
@@ -460,7 +458,7 @@ def page_cohort_analysis(df: pd.DataFrame) -> None:
     st.subheader("Cohort Retention Analysis")
     try:
         from src.cohort_analysis import build_retention_heatmap_data, compute_cohort_metrics
-        
+
         col1, col2 = st.columns([2, 1])
         with col1:
             st.markdown("**Retention by Tenure & Service**")
@@ -474,7 +472,7 @@ def page_cohort_analysis(df: pd.DataFrame) -> None:
                 text_auto=".1%"
             )
             st.plotly_chart(fig_heat, use_container_width=True)
-        
+
         with col2:
             st.markdown("**Cohort Metrics**")
             metrics = compute_cohort_metrics(df)
@@ -578,14 +576,14 @@ def main() -> None:
                 # Add engineered features using our module
                 enriched_data = add_engineered_features(input_data)
                 features = get_model_features()
-                
+
                 # Predict
                 prob = model.predict_proba(enriched_data[features])[0, 1]
-                
+
                 # Display results
                 st.markdown("---")
                 res_col1, res_col2 = st.columns([1, 2])
-                
+
                 with res_col1:
                     st.metric("Churn Probability", f"{prob*100:.1f}%")
                     if prob >= 0.7:
@@ -594,33 +592,33 @@ def main() -> None:
                         st.warning("⚠️ MEDIUM RISK")
                     else:
                         st.success("✅ LOW RISK")
-                
+
                 with res_col2:
                     st.progress(float(prob), text="Risk Level")
                     if prob >= 0.5:
                         st.markdown("**Recommendation:** Immediate retention action required. Review plan pricing and tech support experience.")
                     else:
                         st.markdown("**Recommendation:** Customer is stable. Consider upsell opportunities based on current usage.")
-                        
+
                 # Explain with SHAP
                 if explainer is not None:
                     from src.explainability import explain_prediction
                     drivers_dict = explain_prediction(explainer, preprocessor, enriched_data[features], features)
-                    
+
                     if drivers_dict:
                         st.markdown("---")
                         st.markdown("##### Why did the model make this prediction?")
-                        
+
                         # Convert to DataFrame for plotting
                         driver_df = pd.DataFrame([
                             {"Feature": k, "Impact": v, "Direction": "Increased Risk" if v > 0 else "Decreased Risk"}
                             for k, v in list(drivers_dict.items())[:6] # Top 6
                         ])
-                        
+
                         fig_shap = px.bar(
-                            driver_df, 
-                            x="Impact", 
-                            y="Feature", 
+                            driver_df,
+                            x="Impact",
+                            y="Feature",
                             color="Direction",
                             color_discrete_map={"Increased Risk": CHURN_RED, "Decreased Risk": RETAINED_TEAL},
                             orientation="h",
@@ -629,7 +627,7 @@ def main() -> None:
                         fig_shap.update_layout(yaxis={'categoryorder':'total ascending'})
                         st.plotly_chart(fig_shap, use_container_width=True)
             except Exception as e:
-                st.error(f"Error making prediction: {str(e)}")
+                st.error(f"Error making prediction: {e!s}")
 
     df = apply_filters(customers)
 

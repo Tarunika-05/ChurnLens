@@ -1,7 +1,8 @@
 """FastAPI application for churn prediction service."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import predictions, analytics, health
+
+from api.routers import analytics, health, predictions
 
 app = FastAPI(
     title="Churn Prediction API",
@@ -17,6 +18,7 @@ app.add_middleware(
 )
 
 from fastapi.responses import RedirectResponse
+
 
 @app.get("/", include_in_schema=False)
 async def root():

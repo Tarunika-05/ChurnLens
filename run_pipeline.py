@@ -17,17 +17,16 @@ from src.config import (
     MODEL_PATH,
     PREDICTIONS_PATH,
     REPORTS_DIR,
+    settings,
 )
 from src.data_cleaning import clean_data, load_raw_data, outlier_summary
-from src.features import add_engineered_features, get_model_features
-from src.ml_models import extract_feature_importance, save_metrics, train_models
-from src.explainability import get_shap_explainer, global_shap_summary
-from src.statistical_tests import run_all_significance_tests
 from src.experiment_tracking import setup_mlflow
-
-
+from src.explainability import get_shap_explainer, global_shap_summary
+from src.features import add_engineered_features, get_model_features
 from src.logger import log_step, setup_logging
-from src.config import settings
+from src.ml_models import extract_feature_importance, save_metrics, train_models
+from src.statistical_tests import run_all_significance_tests
+
 
 @log_step("Ensure Directories")
 def ensure_directories() -> None:
@@ -39,7 +38,7 @@ def ensure_directories() -> None:
 def build_business_summary(df: pd.DataFrame) -> dict:
     churned = df[df["churn_flag"]]
     return {
-        "total_customers": int(len(df)),
+        "total_customers": len(df),
         "active_customers": int((~df["churn_flag"]).sum()),
         "churned_customers": int(df["churn_flag"].sum()),
         "churn_rate_pct": round(df["churn_flag"].mean() * 100, 2),
@@ -166,7 +165,7 @@ def main() -> None:
         summary = build_business_summary(enriched_df)
         with open(REPORTS_DIR / "business_summary.json", "w", encoding="utf-8") as handle:
             json.dump(summary, handle, indent=2)
-            
+
         logger.info("Running statistical significance tests...")
         stats_df = run_all_significance_tests(enriched_df)
         stats_df.to_csv(REPORTS_DIR / "statistical_tests.csv", index=False)

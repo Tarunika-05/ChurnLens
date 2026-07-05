@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import os
-
 import pandas as pd
 from sqlalchemy import create_engine
 
 from src.config import DATA_PROCESSED, settings
 from src.logger import setup_logging
+
 
 def main() -> None:
     logger = setup_logging(settings.log_level)

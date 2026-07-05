@@ -1,13 +1,15 @@
 """Dependency injection for model loading and data access."""
-import joblib
 from functools import lru_cache
+
+import joblib
+
 from src.config import MODEL_PATH
-from src.logger import setup_logging
 from src.exceptions import ModelLoadError
+from src.logger import setup_logging
 
 logger = setup_logging()
 
-@lru_cache()
+@lru_cache
 def get_model():
     """Load and cache the trained model."""
     try:
@@ -21,12 +23,13 @@ def get_model():
         logger.error(f"Error loading model: {e}")
         raise ModelLoadError(f"Error loading model: {e}") from e
 
-@lru_cache()
+@lru_cache
 def get_explainer():
+    import pandas as pd
+
+    from src.config import DATA_PROCESSED
     from src.explainability import get_shap_explainer
     from src.features import get_model_features
-    import pandas as pd
-    from src.config import DATA_PROCESSED
     try:
         model = get_model()
         df = pd.read_csv(DATA_PROCESSED)

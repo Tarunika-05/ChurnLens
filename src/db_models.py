@@ -1,6 +1,6 @@
 """Database ORM models for telecom churn analytics."""
 
-from sqlalchemy import Column, String, Integer, SmallInteger, Numeric, Boolean
+from sqlalchemy import Boolean, Column, Integer, Numeric, SmallInteger, String
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -29,13 +29,13 @@ class Customer(Base):
     monthly_charges = Column(Numeric(10, 2))
     total_charges = Column(Numeric(10, 2))
     churn = Column(Boolean, nullable=False, index=True)
-    
+
     # Engineered features
     tenure_bucket = Column(String(20), index=True)
     spending_category = Column(String(20))
     estimated_clv = Column(Numeric(12, 2))
     age_group = Column(String(20))
-    
+
     # Prediction results (added for Phase 4)
     churn_probability = Column(Numeric(5, 4))
     risk_tier = Column(String(10))

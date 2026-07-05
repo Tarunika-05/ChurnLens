@@ -1,6 +1,8 @@
 """Pydantic request/response models."""
-from pydantic import BaseModel, Field
 from enum import Enum
+
+from pydantic import BaseModel, Field
+
 
 class ContractType(str, Enum):
     MONTH_TO_MONTH = "Month-to-month"
@@ -11,7 +13,7 @@ class InternetServiceType(str, Enum):
     DSL = "DSL"
     FIBER = "Fiber optic"
     NO = "No"
-    
+
 class PaymentMethodType(str, Enum):
     E_CHECK = "Electronic check"
     MAILED_CHECK = "Mailed check"

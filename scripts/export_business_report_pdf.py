@@ -107,10 +107,9 @@ def build_pdf() -> None:
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     SimpleDocTemplate(str(OUTPUT), pagesize=letter, rightMargin=54, leftMargin=54).build(story)
-    
-    import logging
-    from src.logger import setup_logging
+
     from src.config import settings
+    from src.logger import setup_logging
     logger = setup_logging(settings.log_level)
     logger.info(f"Saved {OUTPUT}")
 

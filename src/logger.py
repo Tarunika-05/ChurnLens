@@ -4,6 +4,7 @@ import sys
 import time
 from functools import wraps
 
+
 def setup_logging(level: str = "INFO") -> logging.Logger:
     """Configure root logger with structured format."""
     log_format = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"

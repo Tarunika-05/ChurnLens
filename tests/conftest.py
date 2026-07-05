@@ -1,7 +1,7 @@
 """Pytest fixtures."""
-import pytest
 import pandas as pd
-import numpy as np
+import pytest
+
 
 @pytest.fixture
 def sample_raw_data():

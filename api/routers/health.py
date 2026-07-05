@@ -1,7 +1,8 @@
 """Health check endpoints."""
-from fastapi import APIRouter, Depends
-from api.schemas import HealthResponse
+from fastapi import APIRouter
+
 from api.dependencies import get_model
+from api.schemas import HealthResponse
 from src.exceptions import ModelLoadError
 
 router = APIRouter()
@@ -15,7 +16,7 @@ async def health_check() -> HealthResponse:
         status = "healthy"
     except ModelLoadError:
         status = "degraded (model not loaded)"
-        
+
     return HealthResponse(
         status=status,
         model_loaded=model_loaded,

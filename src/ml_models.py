@@ -5,37 +5,35 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import joblib
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+import optuna
+import optuna.visualization as vis
+import pandas as pd
 import seaborn as sns
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
+    confusion_matrix,
     f1_score,
+    precision_recall_curve,
     precision_score,
     recall_score,
     roc_auc_score,
-    confusion_matrix,
-    classification_report,
-    precision_recall_curve,
     roc_curve,
 )
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
-from imblearn.pipeline import Pipeline as ImbPipeline
-from imblearn.over_sampling import SMOTE
-import optuna
-import optuna.visualization as vis
 
+from src.config import IMAGES_DIR, RANDOM_STATE, TEST_SIZE
 from src.exceptions import PipelineError
-from src.config import RANDOM_STATE, TEST_SIZE, IMAGES_DIR
-from src.features import get_model_features
 from src.experiment_tracking import log_training_run
+from src.features import get_model_features
 
 
 def build_preprocessor(feature_frame: pd.DataFrame) -> ColumnTransformer:
@@ -65,26 +63,26 @@ def evaluate_model(name: str, model: Any, x_test: pd.DataFrame, y_test: pd.Serie
 
 def find_optimal_threshold(y_true, y_proba, fn_cost=45, fp_cost=5) -> float:
     """Find threshold that minimizes business cost."""
-    precisions, recalls, thresholds = precision_recall_curve(y_true, y_proba)
+    _precisions, _recalls, thresholds = precision_recall_curve(y_true, y_proba)
     best_threshold = 0.5
     min_cost = float('inf')
-    
+
     # We want to find threshold that minimizes: FN*fn_cost + FP*fp_cost
     # Calculate costs for all thresholds
     for threshold in thresholds:
         preds = (y_proba >= threshold).astype(int)
-        tn, fp, fn, tp = confusion_matrix(y_true, preds).ravel()
+        _tn, fp, fn, _tp = confusion_matrix(y_true, preds).ravel()
         cost = (fn * fn_cost) + (fp * fp_cost)
         if cost < min_cost:
             min_cost = cost
             best_threshold = threshold
-            
+
     return float(best_threshold)
 
 def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     """Save confusion matrix, ROC curve, and PR curve."""
     save_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Confusion Matrix
     preds = (y_proba >= threshold).astype(int)
     cm = confusion_matrix(y_true, preds)
@@ -96,7 +94,7 @@ def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     fig.tight_layout()
     fig.savefig(save_dir / "confusion_matrix.png", dpi=150)
     plt.close(fig)
-    
+
     # ROC Curve
     fpr, tpr, _ = roc_curve(y_true, y_proba)
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -108,7 +106,7 @@ def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     fig.tight_layout()
     fig.savefig(save_dir / "roc_curve.png", dpi=150)
     plt.close(fig)
-    
+
     # PR Curve
     precisions, recalls, _ = precision_recall_curve(y_true, y_proba)
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -122,7 +120,7 @@ def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
 
 def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFrame]:
     features = get_model_features()
-    missing_cols = [c for c in features + ["churn_flag"] if c not in df.columns]
+    missing_cols = [c for c in [*features, "churn_flag"] if c not in df.columns]
     if missing_cols:
         raise PipelineError(f"Missing required columns for training: {missing_cols}")
 
@@ -135,10 +133,10 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
         )
 
         preprocessor = build_preprocessor(x_train)
-        
+
         # Cross-validation setup
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
-        
+
         candidates = {
             "Logistic Regression": LogisticRegression(max_iter=1000, random_state=RANDOM_STATE),
             "Random Forest": RandomForestClassifier(
@@ -154,7 +152,7 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
 
         metrics = []
         fitted_models: dict[str, ImbPipeline] = {}
-        
+
         # Tune XGBoost with Optuna
         def objective(trial):
             params = {
@@ -168,7 +166,7 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             }
             xgb = XGBClassifier(**params)
             pipe = ImbPipeline(steps=[("preprocessor", preprocessor), ("smote", smote), ("model", xgb)])
-            
+
             # Use StratifiedKFold to evaluate this set of parameters
             roc_aucs = []
             for train_idx, val_idx in cv.split(x_train, y_train):
@@ -178,10 +176,10 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
                 y_proba = pipe.predict_proba(X_val)[:, 1]
                 roc_aucs.append(roc_auc_score(y_val, y_proba))
             return np.mean(roc_aucs)
-            
+
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=10) # 10 trials for speed, usually 50+
-        
+
         # Save Optuna plots
         IMAGES_DIR.mkdir(parents=True, exist_ok=True)
         try:
@@ -189,7 +187,7 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             fig_history.write_image(str(IMAGES_DIR / "optuna_history.png"))
         except Exception:
             pass # Ignore if plotly or kaleido isn't installed for writing images
-            
+
         # Update XGBoost candidate with best params
         candidates["XGBoost"] = XGBClassifier(**study.best_params, eval_metric="logloss", random_state=RANDOM_STATE)
 
@@ -208,20 +206,20 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
                 y_tr, y_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
                 pipeline.fit(X_tr, y_tr)
                 cv_roc_aucs.append(roc_auc_score(y_val, pipeline.predict_proba(X_val)[:, 1]))
-                
+
             # Train on full train set for final model
             pipeline.fit(x_train, y_train)
             fitted_models[name] = pipeline
-            
+
             # Find optimal threshold on validation set (we use test set here for simplicity, but ideally should be CV)
             y_proba = pipeline.predict_proba(x_test)[:, 1]
             optimal_threshold = find_optimal_threshold(y_test, y_proba)
-            
+
             model_metrics = evaluate_model(name, pipeline, x_test, y_test, threshold=optimal_threshold)
             model_metrics["cv_roc_auc_mean"] = round(float(np.mean(cv_roc_aucs)), 4)
             model_metrics["cv_roc_auc_std"] = round(float(np.std(cv_roc_aucs)), 4)
             metrics.append(model_metrics)
-            
+
             # Log to MLflow
             try:
                 params = getattr(estimator, "get_params", lambda: {})()
@@ -249,13 +247,13 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             bins=[-0.01, 0.4, 0.7, 1.0],
             labels=["Low", "Medium", "High"],
         )
-        
+
         # Save evaluation charts for the best model
         save_evaluation_charts(y_test.values, test_probabilities, best_threshold, IMAGES_DIR)
 
         return best_model, metrics_df, predictions
     except Exception as e:
-        raise PipelineError(f"Model training failed: {str(e)}") from e
+        raise PipelineError(f"Model training failed: {e!s}") from e
 
 
 def extract_feature_importance(model: ImbPipeline, x: pd.DataFrame) -> pd.DataFrame:
