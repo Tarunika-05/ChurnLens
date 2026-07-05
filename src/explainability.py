@@ -57,11 +57,7 @@ def explain_prediction(
         shap_values = explainer.shap_values(X_transformed)
 
         # Depending on the model, shap_values might be a list (for classification) or an array
-        if isinstance(shap_values, list):
-            # Take the values for the positive class (churn = 1)
-            vals = shap_values[1][0]
-        else:
-            vals = shap_values[0]
+        vals = shap_values[1][0] if isinstance(shap_values, list) else shap_values[0]
 
         # Get transformed feature names if preprocessor exists
         if preprocessor is not None and hasattr(preprocessor, "get_feature_names_out"):
