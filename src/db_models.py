@@ -3,7 +3,9 @@
 from sqlalchemy import Boolean, Column, Integer, Numeric, SmallInteger, String
 from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()
+from typing import Any
+
+Base: Any = declarative_base()
 
 
 class Customer(Base):

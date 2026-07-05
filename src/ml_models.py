@@ -233,7 +233,7 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
 
             # Log to MLflow
             try:
-                params = getattr(estimator, "get_params", lambda: {})()
+                params: dict[str, Any] = getattr(estimator, "get_params", lambda: {})()
                 mlflow_metrics = {
                     k: v for k, v in model_metrics.items() if isinstance(v, (int, float))
                 }
