@@ -1,9 +1,9 @@
 """Database ORM models for telecom churn analytics."""
 
+from typing import Any
+
 from sqlalchemy import Boolean, Column, Integer, Numeric, SmallInteger, String
 from sqlalchemy.orm import declarative_base
-
-from typing import Any
 
 Base: Any = declarative_base()
 
