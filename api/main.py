@@ -1,4 +1,5 @@
 """FastAPI application for churn prediction service."""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -23,6 +24,7 @@ from fastapi.responses import RedirectResponse
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
+
 
 app.include_router(health.router, tags=["Health"])
 app.include_router(predictions.router, prefix="/api/v1", tags=["Predictions"])

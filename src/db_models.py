@@ -5,8 +5,9 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
+
 class Customer(Base):
-    __tablename__ = 'customers'
+    __tablename__ = "customers"
 
     customer_id = Column(String(20), primary_key=True)
     gender = Column(String(10))

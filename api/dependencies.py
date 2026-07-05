@@ -1,4 +1,5 @@
 """Dependency injection for model loading and data access."""
+
 from functools import lru_cache
 
 import joblib
@@ -8,6 +9,7 @@ from src.exceptions import ModelLoadError
 from src.logger import setup_logging
 
 logger = setup_logging()
+
 
 @lru_cache
 def get_model():
@@ -23,6 +25,7 @@ def get_model():
         logger.error(f"Error loading model: {e}")
         raise ModelLoadError(f"Error loading model: {e}") from e
 
+
 @lru_cache
 def get_explainer():
     import pandas as pd
@@ -30,6 +33,7 @@ def get_explainer():
     from src.config import DATA_PROCESSED
     from src.explainability import get_shap_explainer
     from src.features import get_model_features
+
     try:
         model = get_model()
         df = pd.read_csv(DATA_PROCESSED)

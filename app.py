@@ -50,6 +50,7 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     return customers, importance, stats
 
+
 @st.cache_resource
 def get_trained_model():
     try:
@@ -57,10 +58,12 @@ def get_trained_model():
     except Exception:
         return None
 
+
 @st.cache_resource
 def get_shap_components(_model):
     try:
         from src.explainability import get_shap_explainer
+
         df = pd.read_csv(DATA_PATH)
         features = get_model_features()
         X_bg = df[features].sample(min(100, len(df)), random_state=42)
@@ -107,7 +110,7 @@ def page_executive(df: pd.DataFrame) -> None:
     with col1:
         st.subheader("Executive Overview")
     with col2:
-        csv = df.to_csv(index=False).encode('utf-8')
+        csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="⬇️ Export Filtered Data (CSV)",
             data=csv,
@@ -133,9 +136,8 @@ def page_executive(df: pd.DataFrame) -> None:
     fig.update_traces(textposition="inside", textinfo="percent+label")
     col1.plotly_chart(fig, use_container_width=True)
 
-    contract = (
-        df.groupby("Contract", as_index=False)
-        .agg(churn_rate=("churn_flag", "mean"), customers=("customerID", "count"))
+    contract = df.groupby("Contract", as_index=False).agg(
+        churn_rate=("churn_flag", "mean"), customers=("customerID", "count")
     )
     contract["churn_rate"] *= 100
     fig2 = px.bar(
@@ -168,12 +170,13 @@ def get_significance_indicator(column: str, stats_df: pd.DataFrame) -> str:
     return ""
 
 
-def churn_rate_chart(df: pd.DataFrame, column: str, title: str, stats_df: pd.DataFrame) -> go.Figure:
+def churn_rate_chart(
+    df: pd.DataFrame, column: str, title: str, stats_df: pd.DataFrame
+) -> go.Figure:
     sig = get_significance_indicator(column, stats_df)
 
-    summary = (
-        df.groupby(column, as_index=False)
-        .agg(churn_rate=("churn_flag", "mean"), customers=("customerID", "count"))
+    summary = df.groupby(column, as_index=False).agg(
+        churn_rate=("churn_flag", "mean"), customers=("customerID", "count")
     )
     summary["churn_rate"] *= 100
     summary = summary.sort_values("churn_rate", ascending=False)
@@ -196,8 +199,14 @@ def page_churn_analysis(df: pd.DataFrame, stats_df: pd.DataFrame) -> None:
     st.subheader("Churn Analysis")
 
     col1, col2 = st.columns(2)
-    col1.plotly_chart(churn_rate_chart(df, "Contract", "Churn by Contract Type", stats_df), use_container_width=True)
-    col2.plotly_chart(churn_rate_chart(df, "PaymentMethod", "Churn by Payment Method", stats_df), use_container_width=True)
+    col1.plotly_chart(
+        churn_rate_chart(df, "Contract", "Churn by Contract Type", stats_df),
+        use_container_width=True,
+    )
+    col2.plotly_chart(
+        churn_rate_chart(df, "PaymentMethod", "Churn by Payment Method", stats_df),
+        use_container_width=True,
+    )
 
     tenure_df = df.copy()
     tenure_df["tenure_bucket"] = pd.Categorical(
@@ -226,9 +235,8 @@ def page_churn_analysis(df: pd.DataFrame, stats_df: pd.DataFrame) -> None:
         use_container_width=True,
     )
 
-    matrix = (
-        df.groupby(["Contract", "PaymentMethod"], as_index=False)
-        .agg(churn_rate=("churn_flag", "mean"), customers=("customerID", "count"))
+    matrix = df.groupby(["Contract", "PaymentMethod"], as_index=False).agg(
+        churn_rate=("churn_flag", "mean"), customers=("customerID", "count")
     )
     matrix["churn_rate"] *= 100
     heatmap = matrix.pivot(index="Contract", columns="PaymentMethod", values="churn_rate")
@@ -245,7 +253,9 @@ def page_churn_analysis(df: pd.DataFrame, stats_df: pd.DataFrame) -> None:
     st.subheader("Statistical Validation")
     if not stats_df.empty:
         with st.expander("View Statistical Details"):
-            st.markdown("This table proves which churn drivers are statistically significant (✅ p < 0.001, ⚠️ p < 0.05).")
+            st.markdown(
+                "This table proves which churn drivers are statistically significant (✅ p < 0.001, ⚠️ p < 0.05)."
+            )
 
             def format_p(val):
                 if val < 0.001:
@@ -267,9 +277,8 @@ def page_revenue(df: pd.DataFrame) -> None:
     st.subheader("Revenue Insights")
 
     col1, col2 = st.columns(2)
-    revenue_seg = (
-        df.groupby("spending_category", as_index=False)
-        .agg(monthly_revenue=("MonthlyCharges", "sum"))
+    revenue_seg = df.groupby("spending_category", as_index=False).agg(
+        monthly_revenue=("MonthlyCharges", "sum")
     )
     revenue_seg["spending_category"] = pd.Categorical(
         revenue_seg["spending_category"], categories=SPENDING_ORDER, ordered=True
@@ -355,10 +364,7 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
     with col1:
         st.markdown("**High-risk customers (Select a row for Deep Dive)**")
         table = (
-            risk_df[display_cols]
-            .sort_values("churn_probability", ascending=False)
-            .head(100)
-            .copy()
+            risk_df[display_cols].sort_values("churn_probability", ascending=False).head(100).copy()
         )
         # We need raw values for selection to work well, so we format in pandas Styler or let Streamlit format
         # Actually, if we map strings, selection still works but we need to map back to original customerID.
@@ -372,7 +378,7 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
             use_container_width=True,
             hide_index=True,
             on_select="rerun",
-            selection_mode="single-row"
+            selection_mode="single-row",
         )
 
         selected_rows = event.selection.rows
@@ -396,28 +402,46 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
             explainer, preprocessor = get_shap_components(model)
             if explainer:
                 from src.explainability import explain_prediction
+
                 features = get_model_features()
-                drivers_dict = explain_prediction(explainer, preprocessor, df[df["customerID"] == customer_id][features], features)
+                drivers_dict = explain_prediction(
+                    explainer, preprocessor, df[df["customerID"] == customer_id][features], features
+                )
                 if drivers_dict:
                     st.markdown("**Why is this customer at risk? (Top Drivers)**")
-                    driver_df = pd.DataFrame([
-                        {"Feature": k, "Impact": v, "Direction": "Increased Risk" if v > 0 else "Decreased Risk"}
-                        for k, v in list(drivers_dict.items())[:6]
-                    ])
+                    driver_df = pd.DataFrame(
+                        [
+                            {
+                                "Feature": k,
+                                "Impact": v,
+                                "Direction": "Increased Risk" if v > 0 else "Decreased Risk",
+                            }
+                            for k, v in list(drivers_dict.items())[:6]
+                        ]
+                    )
                     fig_shap = px.bar(
                         driver_df,
                         x="Impact",
                         y="Feature",
                         color="Direction",
-                        color_discrete_map={"Increased Risk": CHURN_RED, "Decreased Risk": RETAINED_TEAL},
+                        color_discrete_map={
+                            "Increased Risk": CHURN_RED,
+                            "Decreased Risk": RETAINED_TEAL,
+                        },
                         orientation="h",
                     )
-                    fig_shap.update_layout(yaxis={'categoryorder':'total ascending'}, height=300)
+                    fig_shap.update_layout(yaxis={"categoryorder": "total ascending"}, height=300)
                     st.plotly_chart(fig_shap, use_container_width=True)
 
                     if customer_data["churn_probability"] > 0.5:
-                        st.warning("💡 **Retention Recommendation:** " +
-                            ("Offer a discounted 1-year contract." if customer_data["Contract"] == "Month-to-month" else "Review tech support experience."))
+                        st.warning(
+                            "💡 **Retention Recommendation:** "
+                            + (
+                                "Offer a discounted 1-year contract."
+                                if customer_data["Contract"] == "Month-to-month"
+                                else "Review tech support experience."
+                            )
+                        )
 
     st.markdown("---")
 
@@ -449,7 +473,9 @@ def page_prediction(df: pd.DataFrame, importance: pd.DataFrame) -> None:
     st.markdown("---")
     st.subheader("Global Feature Explainability (SHAP)")
     if SHAP_SUMMARY_PATH.exists():
-        st.image(str(SHAP_SUMMARY_PATH), caption="SHAP Summary Plot (How features impact the model)")
+        st.image(
+            str(SHAP_SUMMARY_PATH), caption="SHAP Summary Plot (How features impact the model)"
+        )
     else:
         st.info("SHAP summary plot not found. Run the pipeline to generate it.")
 
@@ -469,7 +495,7 @@ def page_cohort_analysis(df: pd.DataFrame) -> None:
                 labels=dict(color="Retention Rate", x="Tenure Cohort", y="Internet Service"),
                 color_continuous_scale=["#FCEAE8", RETAINED_TEAL],
                 aspect="auto",
-                text_auto=".1%"
+                text_auto=".1%",
             )
             st.plotly_chart(fig_heat, use_container_width=True)
 
@@ -531,16 +557,23 @@ def main() -> None:
                 phone = st.selectbox("Phone Service", ["Yes", "No"])
                 multiple_lines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
                 paperless = st.selectbox("Paperless Billing", ["Yes", "No"])
-                payment = st.selectbox("Payment Method", [
-                    "Electronic check", "Mailed check",
-                    "Bank transfer (automatic)", "Credit card (automatic)"
-                ])
+                payment = st.selectbox(
+                    "Payment Method",
+                    [
+                        "Electronic check",
+                        "Mailed check",
+                        "Bank transfer (automatic)",
+                        "Credit card (automatic)",
+                    ],
+                )
             with col3:
                 monthly = st.slider("Monthly Charges ($)", 18.0, 120.0, 50.0, 0.5)
                 total = monthly * tenure if tenure > 0 else monthly
                 online_sec = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
                 online_bak = st.selectbox("Online Backup", ["Yes", "No", "No internet service"])
-                device_prot = st.selectbox("Device Protection", ["Yes", "No", "No internet service"])
+                device_prot = st.selectbox(
+                    "Device Protection", ["Yes", "No", "No internet service"]
+                )
                 tech_support = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
                 stream_tv = st.selectbox("Streaming TV", ["Yes", "No", "No internet service"])
                 stream_mov = st.selectbox("Streaming Movies", ["Yes", "No", "No internet service"])
@@ -548,29 +581,33 @@ def main() -> None:
             submitted = st.form_submit_button("⚡ Predict Churn Risk", use_container_width=True)
 
         if submitted and model is not None:
-            input_data = pd.DataFrame([{
-                "customerID": "NEW",
-                "gender": gender,
-                "SeniorCitizen": senior,
-                "Partner": partner,
-                "Dependents": dependents,
-                "tenure": tenure,
-                "PhoneService": phone,
-                "MultipleLines": multiple_lines,
-                "InternetService": internet,
-                "OnlineSecurity": online_sec,
-                "OnlineBackup": online_bak,
-                "DeviceProtection": device_prot,
-                "TechSupport": tech_support,
-                "StreamingTV": stream_tv,
-                "StreamingMovies": stream_mov,
-                "Contract": contract,
-                "PaperlessBilling": paperless,
-                "PaymentMethod": payment,
-                "MonthlyCharges": monthly,
-                "TotalCharges": total,
-                "Churn": "No"
-            }])
+            input_data = pd.DataFrame(
+                [
+                    {
+                        "customerID": "NEW",
+                        "gender": gender,
+                        "SeniorCitizen": senior,
+                        "Partner": partner,
+                        "Dependents": dependents,
+                        "tenure": tenure,
+                        "PhoneService": phone,
+                        "MultipleLines": multiple_lines,
+                        "InternetService": internet,
+                        "OnlineSecurity": online_sec,
+                        "OnlineBackup": online_bak,
+                        "DeviceProtection": device_prot,
+                        "TechSupport": tech_support,
+                        "StreamingTV": stream_tv,
+                        "StreamingMovies": stream_mov,
+                        "Contract": contract,
+                        "PaperlessBilling": paperless,
+                        "PaymentMethod": payment,
+                        "MonthlyCharges": monthly,
+                        "TotalCharges": total,
+                        "Churn": "No",
+                    }
+                ]
+            )
 
             try:
                 # Add engineered features using our module
@@ -585,7 +622,7 @@ def main() -> None:
                 res_col1, res_col2 = st.columns([1, 2])
 
                 with res_col1:
-                    st.metric("Churn Probability", f"{prob*100:.1f}%")
+                    st.metric("Churn Probability", f"{prob * 100:.1f}%")
                     if prob >= 0.7:
                         st.error("🚨 HIGH RISK")
                     elif prob >= 0.4:
@@ -596,35 +633,51 @@ def main() -> None:
                 with res_col2:
                     st.progress(float(prob), text="Risk Level")
                     if prob >= 0.5:
-                        st.markdown("**Recommendation:** Immediate retention action required. Review plan pricing and tech support experience.")
+                        st.markdown(
+                            "**Recommendation:** Immediate retention action required. Review plan pricing and tech support experience."
+                        )
                     else:
-                        st.markdown("**Recommendation:** Customer is stable. Consider upsell opportunities based on current usage.")
+                        st.markdown(
+                            "**Recommendation:** Customer is stable. Consider upsell opportunities based on current usage."
+                        )
 
                 # Explain with SHAP
                 if explainer is not None:
                     from src.explainability import explain_prediction
-                    drivers_dict = explain_prediction(explainer, preprocessor, enriched_data[features], features)
+
+                    drivers_dict = explain_prediction(
+                        explainer, preprocessor, enriched_data[features], features
+                    )
 
                     if drivers_dict:
                         st.markdown("---")
                         st.markdown("##### Why did the model make this prediction?")
 
                         # Convert to DataFrame for plotting
-                        driver_df = pd.DataFrame([
-                            {"Feature": k, "Impact": v, "Direction": "Increased Risk" if v > 0 else "Decreased Risk"}
-                            for k, v in list(drivers_dict.items())[:6] # Top 6
-                        ])
+                        driver_df = pd.DataFrame(
+                            [
+                                {
+                                    "Feature": k,
+                                    "Impact": v,
+                                    "Direction": "Increased Risk" if v > 0 else "Decreased Risk",
+                                }
+                                for k, v in list(drivers_dict.items())[:6]  # Top 6
+                            ]
+                        )
 
                         fig_shap = px.bar(
                             driver_df,
                             x="Impact",
                             y="Feature",
                             color="Direction",
-                            color_discrete_map={"Increased Risk": CHURN_RED, "Decreased Risk": RETAINED_TEAL},
+                            color_discrete_map={
+                                "Increased Risk": CHURN_RED,
+                                "Decreased Risk": RETAINED_TEAL,
+                            },
                             orientation="h",
-                            title="Top Influencing Factors for this Customer"
+                            title="Top Influencing Factors for this Customer",
                         )
-                        fig_shap.update_layout(yaxis={'categoryorder':'total ascending'})
+                        fig_shap.update_layout(yaxis={"categoryorder": "total ascending"})
                         st.plotly_chart(fig_shap, use_container_width=True)
             except Exception as e:
                 st.error(f"Error making prediction: {e!s}")
@@ -635,7 +688,14 @@ def main() -> None:
     st.caption("Telecom retention KPIs, segment analysis, revenue impact, and ML risk scoring")
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-        ["Executive Overview", "Churn Analysis", "Revenue Insights", "Churn Prediction", "Cohort Analysis", "🔮 Predict Customer"]
+        [
+            "Executive Overview",
+            "Churn Analysis",
+            "Revenue Insights",
+            "Churn Prediction",
+            "Cohort Analysis",
+            "🔮 Predict Customer",
+        ]
     )
     with tab1:
         page_executive(df)
@@ -652,8 +712,7 @@ def main() -> None:
 
     st.sidebar.divider()
     st.sidebar.markdown(
-        "**Data:** IBM Telco Customer Churn  \n"
-        f"**Records:** {len(df):,} (filtered)"
+        f"**Data:** IBM Telco Customer Churn  \n**Records:** {len(df):,} (filtered)"
     )
 
 

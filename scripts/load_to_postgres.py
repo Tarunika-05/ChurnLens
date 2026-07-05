@@ -46,5 +46,6 @@ def main() -> None:
     load_df.to_sql("customers", engine, if_exists="replace", index=False)
     logger.info(f"Loaded {len(load_df)} rows into PostgreSQL table 'customers'.")
 
+
 if __name__ == "__main__":
     main()

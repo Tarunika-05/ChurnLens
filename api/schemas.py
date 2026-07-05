@@ -1,4 +1,5 @@
 """Pydantic request/response models."""
+
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -9,16 +10,19 @@ class ContractType(str, Enum):
     ONE_YEAR = "One year"
     TWO_YEAR = "Two year"
 
+
 class InternetServiceType(str, Enum):
     DSL = "DSL"
     FIBER = "Fiber optic"
     NO = "No"
+
 
 class PaymentMethodType(str, Enum):
     E_CHECK = "Electronic check"
     MAILED_CHECK = "Mailed check"
     BANK_TRANSFER = "Bank transfer (automatic)"
     CREDIT_CARD = "Credit card (automatic)"
+
 
 class PredictionRequest(BaseModel):
     customerID: str = Field(default="NEW")
@@ -42,12 +46,14 @@ class PredictionRequest(BaseModel):
     MonthlyCharges: float = Field(..., gt=0, le=500)
     TotalCharges: float = Field(..., ge=0)
 
+
 class PredictionResponse(BaseModel):
     customer_id: str
     churn_probability: float
     risk_tier: str
     predicted_churn: int
     top_drivers: list[str] | None = None
+
 
 class HealthResponse(BaseModel):
     status: str

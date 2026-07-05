@@ -17,6 +17,7 @@ from src.logger import setup_logging
 
 DASHBOARD_DATA = ROOT / "dashboard" / "dashboard_data.csv"
 
+
 def main() -> None:
     logger = setup_logging(settings.log_level)
     try:

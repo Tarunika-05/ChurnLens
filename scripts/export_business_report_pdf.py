@@ -110,6 +110,7 @@ def build_pdf() -> None:
 
     from src.config import settings
     from src.logger import setup_logging
+
     logger = setup_logging(settings.log_level)
     logger.info(f"Saved {OUTPUT}")
 

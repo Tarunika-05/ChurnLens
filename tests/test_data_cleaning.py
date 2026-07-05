@@ -1,4 +1,5 @@
 """Tests for data cleaning."""
+
 import numpy as np
 
 from src.data_cleaning import clean_data
@@ -9,8 +10,11 @@ def test_clean_data_handles_total_charges(sample_raw_data):
     df, _ = clean_data(sample_raw_data)
 
     assert df["TotalCharges"].dtype == float
-    assert len(df) == 3  # The row with empty TotalCharges (" ") should be filled with MonthlyCharges
-    assert "churn_flag" not in df.columns # churn_flag is added in features.py, not here
+    assert (
+        len(df) == 3
+    )  # The row with empty TotalCharges (" ") should be filled with MonthlyCharges
+    assert "churn_flag" not in df.columns  # churn_flag is added in features.py, not here
+
 
 def test_clean_data_handles_missing_values(sample_raw_data):
     """Test dropping rows with any remaining missing values."""

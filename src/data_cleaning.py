@@ -27,9 +27,17 @@ def build_quality_report(before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFr
 
     rows = [
         ("Total rows", len(before), len(after)),
-        ("Duplicate customer IDs", int(before["customerID"].duplicated().sum()), int(after["customerID"].duplicated().sum())),
+        (
+            "Duplicate customer IDs",
+            int(before["customerID"].duplicated().sum()),
+            int(after["customerID"].duplicated().sum()),
+        ),
         ("Missing TotalCharges", missing_total_charges(before), missing_total_charges(after)),
-        ("Invalid churn values", int((~before["Churn"].isin(["Yes", "No"])).sum()), int((~after["Churn"].isin(["Yes", "No"])).sum())),
+        (
+            "Invalid churn values",
+            int((~before["Churn"].isin(["Yes", "No"])).sum()),
+            int((~after["Churn"].isin(["Yes", "No"])).sum()),
+        ),
         ("Negative tenure", int((before["tenure"] < 0).sum()), int((after["tenure"] < 0).sum())),
     ]
     return pd.DataFrame(rows, columns=["Metric", "Before", "After"])
@@ -39,7 +47,14 @@ from src.exceptions import DataValidationError
 
 
 def clean_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    required_cols = ["customerID", "TotalCharges", "MonthlyCharges", "tenure", "SeniorCitizen", "Churn"]
+    required_cols = [
+        "customerID",
+        "TotalCharges",
+        "MonthlyCharges",
+        "tenure",
+        "SeniorCitizen",
+        "Churn",
+    ]
     missing_cols = [c for c in required_cols if c not in df.columns]
     if missing_cols:
         raise DataValidationError(f"Missing required columns: {missing_cols}")
@@ -50,7 +65,9 @@ def clean_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     try:
         cleaned = cleaned.drop_duplicates(subset=["customerID"], keep="first")
         cleaned["TotalCharges"] = pd.to_numeric(cleaned["TotalCharges"], errors="coerce")
-        cleaned.loc[cleaned["tenure"] == 0, "TotalCharges"] = cleaned.loc[cleaned["tenure"] == 0, "MonthlyCharges"]
+        cleaned.loc[cleaned["tenure"] == 0, "TotalCharges"] = cleaned.loc[
+            cleaned["tenure"] == 0, "MonthlyCharges"
+        ]
         cleaned["TotalCharges"] = cleaned["TotalCharges"].fillna(cleaned["MonthlyCharges"])
         cleaned["SeniorCitizen"] = cleaned["SeniorCitizen"].astype(int)
         cleaned["tenure"] = cleaned["tenure"].astype(int)

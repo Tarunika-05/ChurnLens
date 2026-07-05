@@ -48,7 +48,9 @@ def build_preprocessor(feature_frame: pd.DataFrame) -> ColumnTransformer:
     )
 
 
-def evaluate_model(name: str, model: Any, x_test: pd.DataFrame, y_test: pd.Series, threshold: float = 0.5) -> dict[str, float | str]:
+def evaluate_model(
+    name: str, model: Any, x_test: pd.DataFrame, y_test: pd.Series, threshold: float = 0.5
+) -> dict[str, float | str]:
     probabilities = model.predict_proba(x_test)[:, 1]
     predictions = (probabilities >= threshold).astype(int)
     return {
@@ -58,14 +60,15 @@ def evaluate_model(name: str, model: Any, x_test: pd.DataFrame, y_test: pd.Serie
         "recall": round(recall_score(y_test, predictions), 4),
         "f1": round(f1_score(y_test, predictions), 4),
         "roc_auc": round(roc_auc_score(y_test, probabilities), 4),
-        "optimal_threshold": threshold
+        "optimal_threshold": threshold,
     }
+
 
 def find_optimal_threshold(y_true, y_proba, fn_cost=45, fp_cost=5) -> float:
     """Find threshold that minimizes business cost."""
     _precisions, _recalls, thresholds = precision_recall_curve(y_true, y_proba)
     best_threshold = 0.5
-    min_cost = float('inf')
+    min_cost = float("inf")
 
     # We want to find threshold that minimizes: FN*fn_cost + FP*fp_cost
     # Calculate costs for all thresholds
@@ -79,6 +82,7 @@ def find_optimal_threshold(y_true, y_proba, fn_cost=45, fp_cost=5) -> float:
 
     return float(best_threshold)
 
+
 def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     """Save confusion matrix, ROC curve, and PR curve."""
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -87,10 +91,10 @@ def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     preds = (y_proba >= threshold).astype(int)
     cm = confusion_matrix(y_true, preds)
     fig, ax = plt.subplots(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-    ax.set_title(f'Confusion Matrix (Threshold={threshold:.2f})')
-    ax.set_ylabel('Actual')
-    ax.set_xlabel('Predicted')
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+    ax.set_title(f"Confusion Matrix (Threshold={threshold:.2f})")
+    ax.set_ylabel("Actual")
+    ax.set_xlabel("Predicted")
     fig.tight_layout()
     fig.savefig(save_dir / "confusion_matrix.png", dpi=150)
     plt.close(fig)
@@ -98,11 +102,11 @@ def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     # ROC Curve
     fpr, tpr, _ = roc_curve(y_true, y_proba)
     fig, ax = plt.subplots(figsize=(6, 5))
-    ax.plot(fpr, tpr, color='#2E86AB', lw=2)
-    ax.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-    ax.set_title('ROC Curve')
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
+    ax.plot(fpr, tpr, color="#2E86AB", lw=2)
+    ax.plot([0, 1], [0, 1], color="gray", lw=1, linestyle="--")
+    ax.set_title("ROC Curve")
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
     fig.tight_layout()
     fig.savefig(save_dir / "roc_curve.png", dpi=150)
     plt.close(fig)
@@ -110,13 +114,14 @@ def save_evaluation_charts(y_true, y_proba, threshold, save_dir):
     # PR Curve
     precisions, recalls, _ = precision_recall_curve(y_true, y_proba)
     fig, ax = plt.subplots(figsize=(6, 5))
-    ax.plot(recalls, precisions, color='#E94F37', lw=2)
-    ax.set_title('Precision-Recall Curve')
-    ax.set_xlabel('Recall')
-    ax.set_ylabel('Precision')
+    ax.plot(recalls, precisions, color="#E94F37", lw=2)
+    ax.set_title("Precision-Recall Curve")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
     fig.tight_layout()
     fig.savefig(save_dir / "pr_curve.png", dpi=150)
     plt.close(fig)
+
 
 def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFrame]:
     features = get_model_features()
@@ -162,10 +167,12 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
                 "subsample": trial.suggest_float("subsample", 0.6, 1.0),
                 "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
                 "eval_metric": "logloss",
-                "random_state": RANDOM_STATE
+                "random_state": RANDOM_STATE,
             }
             xgb = XGBClassifier(**params)
-            pipe = ImbPipeline(steps=[("preprocessor", preprocessor), ("smote", smote), ("model", xgb)])
+            pipe = ImbPipeline(
+                steps=[("preprocessor", preprocessor), ("smote", smote), ("model", xgb)]
+            )
 
             # Use StratifiedKFold to evaluate this set of parameters
             roc_aucs = []
@@ -178,7 +185,7 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             return np.mean(roc_aucs)
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=10) # 10 trials for speed, usually 50+
+        study.optimize(objective, n_trials=10)  # 10 trials for speed, usually 50+
 
         # Save Optuna plots
         IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -186,10 +193,12 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             fig_history = vis.plot_optimization_history(study)
             fig_history.write_image(str(IMAGES_DIR / "optuna_history.png"))
         except Exception:
-            pass # Ignore if plotly or kaleido isn't installed for writing images
+            pass  # Ignore if plotly or kaleido isn't installed for writing images
 
         # Update XGBoost candidate with best params
-        candidates["XGBoost"] = XGBClassifier(**study.best_params, eval_metric="logloss", random_state=RANDOM_STATE)
+        candidates["XGBoost"] = XGBClassifier(
+            **study.best_params, eval_metric="logloss", random_state=RANDOM_STATE
+        )
 
         for name, estimator in candidates.items():
             pipeline = ImbPipeline(
@@ -215,7 +224,9 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             y_proba = pipeline.predict_proba(x_test)[:, 1]
             optimal_threshold = find_optimal_threshold(y_test, y_proba)
 
-            model_metrics = evaluate_model(name, pipeline, x_test, y_test, threshold=optimal_threshold)
+            model_metrics = evaluate_model(
+                name, pipeline, x_test, y_test, threshold=optimal_threshold
+            )
             model_metrics["cv_roc_auc_mean"] = round(float(np.mean(cv_roc_aucs)), 4)
             model_metrics["cv_roc_auc_std"] = round(float(np.std(cv_roc_aucs)), 4)
             metrics.append(model_metrics)
@@ -223,10 +234,12 @@ def train_models(df: pd.DataFrame) -> tuple[ImbPipeline, pd.DataFrame, pd.DataFr
             # Log to MLflow
             try:
                 params = getattr(estimator, "get_params", lambda: {})()
-                mlflow_metrics = {k: v for k, v in model_metrics.items() if isinstance(v, (int, float))}
+                mlflow_metrics = {
+                    k: v for k, v in model_metrics.items() if isinstance(v, (int, float))
+                }
                 log_training_run(name, params, mlflow_metrics, pipeline)
             except Exception:
-                pass # If MLflow isn't fully configured, fail gracefully
+                pass  # If MLflow isn't fully configured, fail gracefully
 
         metrics_df = pd.DataFrame(metrics).sort_values("roc_auc", ascending=False)
         best_name = metrics_df.iloc[0]["model"]

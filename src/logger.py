@@ -1,4 +1,5 @@
 """Centralized logging configuration."""
+
 import logging
 import sys
 import time
@@ -15,8 +16,10 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
     )
     return logging.getLogger("churn_analytics")
 
+
 def log_step(step_name: str):
     """Decorator that logs start/end/duration of a pipeline step."""
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -27,5 +30,7 @@ def log_step(step_name: str):
             elapsed = time.perf_counter() - start
             logger.info("DONE   %s (%.2fs)", step_name, elapsed)
             return result
+
         return wrapper
+
     return decorator

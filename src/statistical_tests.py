@@ -1,4 +1,5 @@
 """Statistical significance testing for churn drivers."""
+
 import contextlib
 
 import numpy as np
@@ -19,15 +20,16 @@ def chi_square_churn_test(df: pd.DataFrame, column: str) -> dict:
         "p_value": float(p_value),
         "effect_size_metric": "Cramer's V",
         "effect_size": float(cramers_v),
-        "significant": bool(p_value < 0.05)
+        "significant": bool(p_value < 0.05),
     }
+
 
 def mann_whitney_churn_test(df: pd.DataFrame, column: str) -> dict:
     """Mann-Whitney U test for churn vs continuous variable."""
     group1 = df[df["churn_flag"]][column].dropna()
     group2 = df[not df["churn_flag"]][column].dropna()
 
-    stat, p_value = stats.mannwhitneyu(group1, group2, alternative='two-sided')
+    stat, p_value = stats.mannwhitneyu(group1, group2, alternative="two-sided")
 
     # Rank-biserial correlation for effect size
     n1, n2 = len(group1), len(group2)
@@ -41,19 +43,22 @@ def mann_whitney_churn_test(df: pd.DataFrame, column: str) -> dict:
         "p_value": float(p_value),
         "effect_size_metric": "Rank-biserial",
         "effect_size": float(abs(r)),
-        "significant": bool(p_value < 0.05)
+        "significant": bool(p_value < 0.05),
     }
+
 
 def run_all_significance_tests(df: pd.DataFrame) -> pd.DataFrame:
     """Run all statistical tests and return summary table."""
     results = []
 
     # Identify categorical and continuous columns
-    cat_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
-    cat_cols = [c for c in cat_cols if c not in ['customerID', 'Churn', 'churn_flag', 'risk_tier']]
+    cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+    cat_cols = [c for c in cat_cols if c not in ["customerID", "Churn", "churn_flag", "risk_tier"]]
 
-    num_cols = df.select_dtypes(include=['number']).columns.tolist()
-    num_cols = [c for c in num_cols if c not in ['churn_probability', 'predicted_churn', 'actual_churn']]
+    num_cols = df.select_dtypes(include=["number"]).columns.tolist()
+    num_cols = [
+        c for c in num_cols if c not in ["churn_probability", "predicted_churn", "actual_churn"]
+    ]
 
     for col in cat_cols:
         if df[col].nunique() > 1:
@@ -65,4 +70,4 @@ def run_all_significance_tests(df: pd.DataFrame) -> pd.DataFrame:
             with contextlib.suppress(Exception):
                 results.append(mann_whitney_churn_test(df, col))
 
-    return pd.DataFrame(results).sort_values('p_value')
+    return pd.DataFrame(results).sort_values("p_value")

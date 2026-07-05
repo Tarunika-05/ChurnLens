@@ -63,9 +63,7 @@ def save_eda_charts(df: pd.DataFrame) -> None:
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    contract_churn = (
-        df.groupby("Contract")["churn_flag"].mean().sort_values(ascending=False) * 100
-    )
+    contract_churn = df.groupby("Contract")["churn_flag"].mean().sort_values(ascending=False) * 100
     sns.barplot(x=contract_churn.index, y=contract_churn.values, palette="Reds_r", ax=ax)
     ax.set_title("Churn Rate by Contract Type")
     ax.set_xlabel("Contract")
@@ -76,9 +74,12 @@ def save_eda_charts(df: pd.DataFrame) -> None:
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    tenure_churn = df.groupby("tenure_bucket")["churn_flag"].mean().reindex(
-        ["0-12 months", "12-24 months", "24-48 months", "48+ months"]
-    ) * 100
+    tenure_churn = (
+        df.groupby("tenure_bucket")["churn_flag"]
+        .mean()
+        .reindex(["0-12 months", "12-24 months", "24-48 months", "48+ months"])
+        * 100
+    )
     sns.barplot(x=tenure_churn.index, y=tenure_churn.values, palette="OrRd", ax=ax)
     ax.set_title("Churn Rate by Tenure Group")
     ax.set_xlabel("Tenure Bucket")
@@ -181,10 +182,14 @@ def main() -> None:
         # Generate SHAP Global Summary
         logger.info("Generating global SHAP summary...")
         features = get_model_features()
-        X_background = enriched_df[features].sample(min(100, len(enriched_df)), random_state=settings.random_state)
+        X_background = enriched_df[features].sample(
+            min(100, len(enriched_df)), random_state=settings.random_state
+        )
         explainer, preprocessor = get_shap_explainer(best_model, X_background)
         shap_summary_path = IMAGES_DIR / "shap_summary.png"
-        global_shap_summary(explainer, preprocessor, enriched_df[features], features, str(shap_summary_path))
+        global_shap_summary(
+            explainer, preprocessor, enriched_df[features], features, str(shap_summary_path)
+        )
 
         logger.info("Pipeline complete.")
         logger.info("Business Summary:\n%s", json.dumps(summary, indent=2))
@@ -192,6 +197,7 @@ def main() -> None:
     except Exception as e:
         logger.error("Pipeline failed with error: %s", str(e), exc_info=True)
         import sys
+
         sys.exit(1)
 
 
